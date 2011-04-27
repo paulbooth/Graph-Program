@@ -282,17 +282,15 @@ def stepthrough(verts, adj,k):
                 changelist.append(i)
     return changelist
 
+#steps through one step of the kpath process (k == -1 for majority not implemented yet)
+#
 def stepthroughkpath(verts, adj, k):
     changelist=[]
+    adj2 = matrixmult(adj, adj)
     for i in xrange(len(verts)):
-        sum=0
-        neighbors=0
-        if verts[i].label=="NULL":
-            for j in xrange(len(verts)):
-                if (i!=j):
-                    neighbors+=adj[i][j]
-            if((sum>=k and k>0) or (k==-1 and sum>=neighbors/2.)or (k==-2 and sum>neighbors/2.)):
-                changelist.append(i)
+        for j in xrange(i):
+            if ( (adj[i][j] == 0) and (adj2[i][j] >= k)):
+                changelist.append([i,j]);
     return changelist
 
 #finds the lowest and highest label in graph, and if the graph is completely covered
@@ -332,6 +330,8 @@ def find_conversion_set(verts, edges, k, minsize):
             size+=1
     if k>=0:
         triviallabels=finishklabeling(verts,edges,k)
+    else:
+        triviallabels = ['NULL' for i in xrange(len(verts))]
     ntvertnums=[]
     for i  in xrange(len(verts)):
         verts[i].label=triviallabels[i]

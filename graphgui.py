@@ -38,6 +38,7 @@ PRISM = 3
 CONNECT = 0
 MAXUNDO = 100
 NUMPHYSICSTYPES=4
+
 myFormats = [('Graph','*.graph')]
 
 class FakeEvent():
@@ -73,6 +74,7 @@ class GraphInterface(Gui):
         self.area = self.ca_width*self.ca_height
         self.temperature= 100
         self.keep_inbounds = True
+        self.kpath = False
         self.setup()
         self.mainloop()
 
@@ -714,6 +716,7 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             file.seek(0)
             graphcounter=0;
             rows=5
+
             cols=5
             for i in xrange(1,5):
                 if i*i>numgraphs:
@@ -1273,7 +1276,12 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             if int(event.keysym)!=0:
                 self.autolabel(int(event.keysym))
             else:
-                self.stepthrough()
+                #print "decide which stepthrough"
+                #print self.kpath
+                if (self.kpath):
+                    self.stepthroughkpath()
+                else:
+                    self.stepthrough()
         self.control_up()
 
     def check_to_clear(self):
@@ -1329,7 +1337,7 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             except:
                 tkMessageBox.showinfo("Error", "The labeling constraints were input in a bad form! Using old constraints.")
                 self.graph.labelingConstraints = backup
-            labeltxt = "Labeling Constraints: L("
+            labeltxt = "Labeling Constraints:\nL("
             for labConst in self.graph.labelingConstraints:
                 labeltxt += str(labConst) + ","
             labeltxt = labeltxt[:-1]
@@ -1341,23 +1349,39 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             try:
                 label=int(newconstraints[0])
                 self.graph.labelingConstraints=label
-                labeltxt = "Labeling Constraints: K"+ str(label)
+                labeltxt = "Labeling Constraints:\nK"+ str(label)
             except:
+		self.kpath = False
                 if newconstraints.upper()[0]=='M':
                     if (len(newconstraints)>1 and newconstraints.upper()[1]=='S'):
                         self.graph.labelingConstraints=-2
-                        labeltxt = "Labeling Constraints: Strong Majority"
+                        labeltxt = "Labeling Constraints:\nStrong Majority"
                     else:
                         self.graph.labelingConstraints=-1
-                        labeltxt = "Labeling Constraints: Majority"
+                        labeltxt = "Labeling Constraints:\nMajority"
                 elif newconstraints.upper()[0] == 'K':
-                    self.graph.labelingConstraints=-3
-                    labeltxt = "Labeling Constraints: K-path"
+					self.kpath = True
+					label = int(newconstraints[1])
+					self.graph.labelingConstraints = label
+					labeltxt = "Labeling Constraints:\nK-path(" + str(label) +")"
+                elif newconstraints.upper()[0] == 'T':
+                    labeltxt = "Labeling Constraints:\nTemporary conversion"
+                    self.graph.labelingConstraints = -4
+                    if newconstraints.upper()[1] == 'M':
+                        self.graph.permanentChange = .5
+                        self.graph.temporaryChange = .1
+                    #Looks like we have a (T)emporary conversion
+                    else:
+                        
+                        self.graph.permanentChange = 4
+                        self.graph.temporaryChange = 3
+                    #syntax is T 
                 else:
                     tkMessageBox.showinfo("Error", "The labeling constraints were input in a bad form! Using old constraints.")
                     self.graph.labelingConstraints = backup
             self.constraintstxt.set(labeltxt)
         self.control_up()
+        #print self.kpath
         
     def label_vertex(self, label):            
         self.registerwithundo()
@@ -1385,38 +1409,42 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
         edges = self.graph.edges
         constraints = self.graph.labelingConstraints
         labels=[]
+        #print "autolabel"
         if type(constraints)==type([]):
             labels = graphmath.auto_label(verts, edges, constraints, minlambda, self.holes_mode.get())
         else:
-            if minlambda==-1:
-                labels=graphmath.finishklabeling(verts,edges,constraints)
+            if self.kpath:
+                for i in xrange(minlambda):
+                    self.stepthroughkpath();
             else:
-                labels=graphmath.find_conversion_set(verts,edges,constraints, minlambda)
+                if minlambda==-1:
+                    labels=graphmath.finishklabeling(verts,edges,constraints)
+                else:
+                    labels=graphmath.find_conversion_set(verts,edges,constraints, minlambda)
             ##put the control-2-3-4-5-etc code call here
-        if labels == "RealError":
-            tkMessageBox.showinfo("Holes and Reals don't mix!", "Don't select 'minimize' or 'no holes' with real labels or constraints; this doesn't make sense!")
-            self.control_up()
-            return
-        if labels == False:
-            tkMessageBox.showinfo("Bad Partial Labeling", "The partial labeling is incorrect.  Please correct before auto-finishing the labeling.")
-            self.control_up()
-            return
-        for i in range(len(verts)):
-            verts[i].label = labels[i]
-        (lmin,lmax,complete)=graphmath.labeling_difference(verts)
-        self.redraw()
-        lnum = lmax - lmin
-        if (not quiet):
-            self.control_up()
-            if type(self.graph.labelingConstraints)==type([]):
-                tkMessageBox.showinfo("Labeling Span", "The labeling span for this coloring is " + str(lnum) + ".\n  Largest label: " + str(lmax) + "\n Smallest label: " + str(lmin))
-            else:
-                s='The graph is completely covered!'
-                if not complete:
-                    s='The graph is NOT completely covered.'
-                tkMessageBox.showinfo("Conversion Time", "The conversion time for this coloring is " + str(lnum) + ".\n  Largest time: " + str(lmax) + "\n Smallest time: " + str(lmin)+"\n"+s)
-
-        return lnum
+                if labels == "RealError":
+                    tkMessageBox.showinfo("Holes and Reals don't mix!", "Don't select 'minimize' or 'no holes' with real labels or constraints; this doesn't make sense!")
+                    self.control_up()
+                    return
+                if labels == False:
+                    tkMessageBox.showinfo("Bad Partial Labeling", "The partial labeling is incorrect.  Please correct before auto-finishing the labeling.")
+                    self.control_up()
+                    return
+                for i in range(len(verts)):
+                    verts[i].label = labels[i]
+                    (lmin,lmax,complete)=graphmath.labeling_difference(verts)
+                    self.redraw()
+                    lnum = lmax - lmin
+                    if (not quiet):
+                        self.control_up()
+                        if type(self.graph.labelingConstraints)==type([]):
+                            tkMessageBox.showinfo("Labeling Span", "The labeling span for this coloring is " + str(lnum) + ".\n  Largest label: " + str(lmax) + "\n Smallest label: " + str(lmin))
+                        else:
+                            s='The graph is completely covered!'
+                            if not complete:
+                                s='The graph is NOT completely covered.'
+                                tkMessageBox.showinfo("Conversion Time", "The conversion time for this coloring is " + str(lnum) + ".\n  Largest time: " + str(lmax) + "\n Smallest time: " + str(lmin)+"\n"+s)
+                return lnum
 
     def check_labeling(self,quiet = False):
         verts = self.graph.get_vertices()
@@ -1467,6 +1495,9 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
         
     #stepthrough one step in k conversion process
     def stepthrough(self):
+	if (self.kpath):
+		return self.stepthroughkpath()
+        #print "step through"
         verts=self.graph.get_vertices()
         changelist=graphmath.stepthrough(verts,graphmath.adjacencymatrix(verts,self.graph.edges), self.graph.labelingConstraints)
         if len(changelist)!=0:
@@ -1477,6 +1508,21 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             return complete
         else:
             return True
+
+	#stepthrough one step in k path process
+    def stepthroughkpath(self):
+        #print "step through kpath"
+        verts=self.graph.get_vertices()
+        changelist=graphmath.stepthroughkpath(verts,graphmath.adjacencymatrix(verts,self.graph.edges), self.graph.labelingConstraints)
+        #print changelist
+        if len(changelist)!=0:
+            self.registerwithundo()
+            for vertnum1, vertnum2 in changelist:
+                self.graph.edges.append(Edge(verts[vertnum1], verts[vertnum2]))
+            return False
+        else:
+            return True
+
     def finishklabeling(self,event=None):
         if type(self.graph.labelingConstraints)!=type([]):
             self.autolabel(-1)
@@ -1896,7 +1942,7 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
         attraction = self.attraction
         vertices = self.graph.get_vertices()
         vertices2 = vertices[:]
-        print self.physics_type,
+        #print self.physics_type,
         if (self.physics_type ==0):
             for i in xrange(len(vertices)):
                 vertex=vertices2[random.randrange(0,len(vertices2))]
