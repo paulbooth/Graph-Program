@@ -75,6 +75,7 @@ class GraphInterface(Gui):
         self.temperature= 100
         self.keep_inbounds = True
         self.kpath = False
+        self.tempConversion = False
         self.setup()
         self.mainloop()
 
@@ -1270,6 +1271,7 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
     def autolabel_easy(self, event=None):
         if type(self.graph.labelingConstraints)==type([]):
             if self.check_to_clear():
+                print "WARNING:clearing labels for autolabeling."
                 self.clear_labeling()
             self.autolabel(int(event.keysym))
         else:
@@ -1405,48 +1407,59 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
 
     def autolabel(self, minlambda, quiet = False):
         self.registerwithundo()
+        print "\nautolabel\n"
         verts = self.graph.get_vertices()
+        print "graphgui labels: ", [vert.label for vert in verts]
         edges = self.graph.edges
         constraints = self.graph.labelingConstraints
         labels=[]
         #print "autolabel"
         if type(constraints)==type([]):
             labels = graphmath.auto_label(verts, edges, constraints, minlambda, self.holes_mode.get())
+            print "graphgui got labels: ", labels
         else:
             if self.kpath:
                 for i in xrange(minlambda):
                     self.stepthroughkpath();
             else:
                 if minlambda==-1:
+                    print "finishing k-labeling."
                     labels=graphmath.finishklabeling(verts,edges,constraints)
                 else:
+                    print "finding a conversion set"
                     labels=graphmath.find_conversion_set(verts,edges,constraints, minlambda)
             ##put the control-2-3-4-5-etc code call here
-                if labels == "RealError":
-                    tkMessageBox.showinfo("Holes and Reals don't mix!", "Don't select 'minimize' or 'no holes' with real labels or constraints; this doesn't make sense!")
-                    self.control_up()
-                    return
-                if labels == False:
-                    tkMessageBox.showinfo("Bad Partial Labeling", "The partial labeling is incorrect.  Please correct before auto-finishing the labeling.")
-                    self.control_up()
-                    return
-                for i in range(len(verts)):
-                    verts[i].label = labels[i]
-                    (lmin,lmax,complete)=graphmath.labeling_difference(verts)
-                    self.redraw()
-                    lnum = lmax - lmin
-                    if (not quiet):
-                        self.control_up()
-                        if type(self.graph.labelingConstraints)==type([]):
-                            tkMessageBox.showinfo("Labeling Span", "The labeling span for this coloring is " + str(lnum) + ".\n  Largest label: " + str(lmax) + "\n Smallest label: " + str(lmin))
-                        else:
-                            s='The graph is completely covered!'
-                            if not complete:
-                                s='The graph is NOT completely covered.'
-                                tkMessageBox.showinfo("Conversion Time", "The conversion time for this coloring is " + str(lnum) + ".\n  Largest time: " + str(lmax) + "\n Smallest time: " + str(lmin)+"\n"+s)
-                return lnum
+        if labels == "RealError":
+            tkMessageBox.showinfo("Holes and Reals don't mix!", "Don't select 'minimize' or 'no holes' with real labels or constraints; this doesn't make sense!")
+            self.control_up()
+            return
+        if labels == False:
+            if type(self.graph.labelingConstraints)==type([]):
+                tkMessageBox.showinfo("Bad Partial Labeling", "The partial labeling is incorrect.  Please correct before auto-finishing the labeling.")
+            else:
+                tkMessageBox.showinfo("No conversion set of size " + minlambda,
+                                      "There is no conversion set of size " + minlambda + ". If you want, you can try again with a larger size, which will be slower.")
+            self.control_up()
+            return
+        for i in range(len(verts)):
+            verts[i].label = labels[i]
+        (lmin,lmax,complete)=graphmath.labeling_difference(verts)
+        self.redraw()
+        lnum = lmax - lmin
+        if (not quiet):
+            self.control_up()
+            if type(self.graph.labelingConstraints)==type([]):
+                tkMessageBox.showinfo("Labeling Span", "The labeling span for this coloring is " + str(lnum) + ".\n  Largest label: " + str(lmax) + "\n Smallest label: " + str(lmin))
+            elif (minlambda == -1):
+                s='The graph is completely covered!'
+                if not complete:
+                    s='The graph is NOT completely covered.'
+                tkMessageBox.showinfo("Conversion Time", "The conversion time for this coloring is " + str(lnum) + ".\n  Largest time: " + str(lmax) + "\n Smallest time: " + str(lmin)+"\n"+s)
+        #print "\nautolabel done.\n"
+        return lnum
 
     def check_labeling(self,quiet = False):
+        #print "check labeling"
         verts = self.graph.get_vertices()
         edges = self.graph.edges
         constraints = self.graph.labelingConstraints
@@ -1483,7 +1496,7 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             if not found:
                 numholes += 1
         if not quiet:
-            control_up()
+            self.control_up()
             tkMessageBox.showinfo("Number of Holes", "The number of holes in this labeling is " + str(numholes) + ".")
         return numholes
 
@@ -2105,11 +2118,11 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
     def toggle_physics(self, event=None):
         if self.stop_physics:
             self.stop_physics = False
-            print self.regular_buttons[12].image
+            #print self.regular_buttons[12].image
             #self.regular_buttons[12].image=PhotoImage(file="icons/stopphy.gif")
             self.regular_buttons[12].image.configure(file = "icons/stopphy.gif")
             self.regular_buttons[12].configure(relief = SUNKEN)
-            print self.regular_buttons[12].image
+            #print self.regular_buttons[12].image
             while(1):
                 self.do_physics()
                 self.update()
@@ -2133,7 +2146,8 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
             
     def change_physics_type(self, event=None):
         self.physics_type= (self.physics_type+1)%NUMPHYSICSTYPES
-            
+        print "changed physics to type:",self.physics_type
+
     def drawbox(self):
         center = self.get_center()
         

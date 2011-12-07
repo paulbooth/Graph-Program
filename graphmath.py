@@ -175,6 +175,7 @@ def check_labeling(verts,edges,constraints):
 # Works with reals.
 # a simple, no frills algorithm for automatically generating a smallest span labelling
 def auto_label(verts, edges, constraints, minmaxlabel, holes_mode = "none"):
+    
     if check_labeling(verts,edges,constraints) != True:
         return False
         
@@ -208,7 +209,6 @@ def auto_label(verts, edges, constraints, minmaxlabel, holes_mode = "none"):
     spm = shortestpathmatrix(verts,edges)
     labs = labels(verts)
 #    maxdist = len(constraints)
-
     maxlabel = minmaxlabel
     # TODO: calculate lower bound of labeling, and test to see if it is better than this person's guess--this may eliminate really long wait
     # TODO: for reals, change from index to actual number
@@ -236,13 +236,16 @@ def auto_label(verts, edges, constraints, minmaxlabel, holes_mode = "none"):
                 return memory[0][1]  # when minimizing
             
             if maxlabel > len(d_set): 
+                print "no labeling of the given type can be found."
                 raise("hell") # this means no labeling of the given type can be found.
             maxlabel += 1
+    # Only executes if the first label is not pre-colored.
     while 1:
 #        for label in range(int(ceil(maxlabel/2.))): # only need to try first half of the colors; second half is equivilent. if not prelabeled
         for label in d_set[0:maxlabel+1]:
-           # what if initlabvel was already labelled??  I think this breaks...
+           # what if initlabel was already labelled??  I think this breaks...
            res = try_label(spm, initvertex, label, maxlabel, labs, constraints, final_check, d_set, memory)
+           print res
            if res != False:
                return res
         if holes_mode == "minimize" and memory[0] != None:
@@ -250,6 +253,9 @@ def auto_label(verts, edges, constraints, minmaxlabel, holes_mode = "none"):
             return memory[0][1]  # when minimizing
         maxlabel += 1
         if maxlabel > len(d_set):
+            print "no labeling of the given type can be found."
+            raise("hell")
+            raise("hell")
             raise("hell")
     
 # completely plays out a k conversion process on a graph until nothing changes
@@ -352,18 +358,23 @@ def find_conversion_set(verts, edges, k, minsize):
                 trylabels=finishklabeling(verts,edges,k)
                 validset=True;
                 for j in xrange(i+1,size):
+                    # we don't have a min set if one that would be colored is 
+                    # initially colored - it doesn't need to be initially
+                    # colored
                     if trylabels[sub[j]]!='NULL':
                         validset=False
-                        break;
+                        break
+                # not sure why this is here.. I think it breaks above
                 if not validset:
-                    break;
+                    break
             
             if 'NULL' not in trylabels:
+                # clear all labels, then set labels to 0 for the ones that work
                 labels=['NULL']*len(verts)
                 for num in final_set_nums+sub:
                     labels[num]=0
                 return labels
-    print "nmmm"
+    print "couldn't find a conversion set"
     return False
 #copmutes n choose k    
 def k_subsets_i(n, k):

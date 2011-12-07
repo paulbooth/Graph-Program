@@ -587,7 +587,7 @@ class Graph:
 
 #        self.toggle_all()
 
-    def get_vertices( self, vertices = None ):
+    def get_vertices(self, vertices = None ):
         just_vertices = []
         active_vertices = vertices or self.vertices
         for element in active_vertices:
