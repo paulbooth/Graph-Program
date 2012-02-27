@@ -1,6 +1,6 @@
 import urllib
 from shutil import move
-SERVER = "http://iamtesch.googlepages.com/"
+SERVER = "http://paulbooth.github.com/Graph-Program/"
 
 #TODO: keep website in separate file, so it can be updated.  Maybe provide mechanism to update auto-update script?
 
