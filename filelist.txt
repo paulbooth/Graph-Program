@@ -21,9 +21,9 @@ icons/stopphy.gif
 icons/cartesian.gif
 icons/strong.gif
 icons/tensor.gif
-icons/change_phsyics_type.gif
+icons/change_physics_type.gif
 icons/colorchooser.gif
-icons/shapeselector.gif
+icons/shapeselecter.gif
 icons/sizepicker.gif
 icons/subgraphs/cycle.gif
 icons/subgraphs/file.gif
