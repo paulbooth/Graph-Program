@@ -1,6 +1,6 @@
 import urllib
 from shutil import move
-SERVER = "http://iamtesch.googlepages.com/"
+SERVER = "http://paulbooth.github.com/Graph-Program/"
 
 #TODO: keep website in separate file, so it can be updated.  Maybe provide mechanism to update auto-update script?
 
@@ -90,7 +90,9 @@ def check_for_updates():
             oldmd5 = getoldmd5(file)
             if md5 != oldmd5:
                 print "downloading newer version of " + file + "."
-                urllib.urlretrieve(SERVER + srv_path(file),file)
+                # next line was using SERVER + srv_path(file)
+                # but the new server has subdirectories
+                urllib.urlretrieve(SERVER + file,file)
             else:
                 print file + " is unchanged."
         filelist.close()

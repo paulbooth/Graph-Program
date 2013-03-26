@@ -6,3 +6,11 @@ hexagonc
 hexagons
 hexagont
 _Hex Cyl
+bin
+include
+build
+local
+lib
+*.pyc
+*~
+#*#
