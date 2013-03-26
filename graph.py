@@ -131,8 +131,13 @@ class Vertex(Component):
             self.size=5
             canvas.ellipse((x-self.size, y-self.size, x+self.size, y+self.size), fill=self.color)
         if self.label!="NULL":
-            fontdir = os.path.join(os.environ["windir"], "fonts")
-            font=ImageFont.truetype(os.path.join(fontdir,u'ARIALBD.TTF'),self.lsize)
+            try:
+                fontdir = os.path.join(os.environ["windir"], "fonts")
+                font=ImageFont.truetype(os.path.join(fontdir,u'ARIALBD.TTF'),self.lsize)
+            except:
+                fontdir = "/Library/Fonts"
+                font=ImageFont.truetype(os.path.join(fontdir,u'Arial Bold.ttf'),self.lsize)
+            
             try:
                 canvas.text((x+self.lx, y+self.ly-8), text=str(self.label), font=font, fill=self.lcolor)
             except:

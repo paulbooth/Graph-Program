@@ -23,6 +23,7 @@ import tkColorChooser
 try:
     import Image, ImageDraw
 except:
+    print "no image or imagedraw. :( can't save as images"
     pass
 import warnings
 try:
@@ -87,12 +88,19 @@ class GraphInterface(Gui):
     def control_down(self, event=None):
         self.control_pressed = True
         
+    def key(self, event=None):
+        print "pressed", repr(event.keysym)
+        print "and code", repr(event.keycode)
+
     def setup(self):
         self.title("Olin Graph Program")
         self.makemenus()
+        self.bind("<Key>", self.key)
         #TODO: put in "keybindings" function
         self.bind("<KeyRelease-Control_L>", self.control_up)
         self.bind("<Control_L>", self.control_down)
+        self.bind("<KeyRelease-Super_L>", self.control_up)
+        self.bind("<Super_L>", self.control_down)
         
         self.bind("<Control-c>", self.copy)
         self.bind("<Control-x>", self.cut)
@@ -135,6 +143,7 @@ class GraphInterface(Gui):
         self.bind("<Control-9>", self.autolabel_easy)
         self.bind("<Control-0>", self.autolabel_easy)
         self.bind("<Delete>", self.delete_selected)
+        self.bind("<BackSpace>", self.delete_selected)
         self.bind("<Configure>", self.redraw)
         # self.bind("<Up>", self.curve_height)
         # self.bind("<Down>", self.curve_height)
@@ -672,8 +681,8 @@ Email iamtesch@gmail.com for feature requests, questions, or help."
         self.message("Save?", "Would you like to save?", self.saveas, "yesnocancel")
         self.control_up()
     def draw_to_file(self, filename):
-        width=float(self.canvas.winfo_width())
-        height=float(self.canvas.winfo_height())
+        width=int(self.canvas.winfo_width())
+        height=int(self.canvas.winfo_height())
         image1 = Image.new("RGB", (width, height), (255,255,255))
         draw = ImageDraw.Draw(image1)
         draw=self.graph.draw_to_file(draw,width,height)
